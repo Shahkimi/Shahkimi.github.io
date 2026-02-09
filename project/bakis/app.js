@@ -1,6 +1,6 @@
 // Check authentication
 if (!localStorage.getItem("isLoggedIn")) {
-  window.location.href = "login.html";
+  window.location.href = "index.html";
 }
 
 // Dummy Data - 100 members (generated)
@@ -388,6 +388,11 @@ document.querySelectorAll(".sidebar .nav-link").forEach((link) => {
         document.getElementById("pageTitle").textContent = "Tambah Ahli Baru";
         initAddMemberForm();
         break;
+      case "pending-payments":
+        document.getElementById("pendingPaymentsView").classList.remove("hidden");
+        document.getElementById("pageTitle").textContent = "Kelulusan Pembayaran";
+        loadPendingPaymentsTable();
+        break;
     }
   });
 });
@@ -397,9 +402,36 @@ document.getElementById("logoutBtn").addEventListener("click", function (e) {
   e.preventDefault();
   if (confirm("Adakah anda pasti mahu log keluar?")) {
     localStorage.removeItem("isLoggedIn");
-    window.location.href = "login.html";
+    window.location.href = "index.html";
   }
 });
+
+// Animate number counting up
+function animateNumber(element, targetValue, duration = 1000) {
+  if (!element) return;
+  
+  const startValue = 0;
+  const startTime = performance.now();
+  
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    
+    // Easing function (ease-out)
+    const easeOut = 1 - Math.pow(1 - progress, 3);
+    const currentValue = Math.floor(startValue + (targetValue - startValue) * easeOut);
+    
+    element.textContent = currentValue;
+    
+    if (progress < 1) {
+      requestAnimationFrame(update);
+    } else {
+      element.textContent = targetValue;
+    }
+  }
+  
+  requestAnimationFrame(update);
+}
 
 // Dashboard
 function initDashboard() {
@@ -426,15 +458,16 @@ function initDashboard() {
   const statBersara = document.getElementById("statBersara");
   const statMeninggal = document.getElementById("statMeninggal");
 
+  // Animate numbers counting up with staggered delays
   if (statAktif) {
-    statAktif.textContent = counts.Aktif;
+    setTimeout(() => animateNumber(statAktif, counts.Aktif, 800), 200);
     console.log("Updated statAktif:", counts.Aktif);
   } else {
     console.error("statAktif element not found");
   }
-  if (statTidakAktif) statTidakAktif.textContent = counts["Tidak Aktif"];
-  if (statBersara) statBersara.textContent = counts.Bersara;
-  if (statMeninggal) statMeninggal.textContent = counts.Meninggal;
+  if (statTidakAktif) setTimeout(() => animateNumber(statTidakAktif, counts["Tidak Aktif"], 800), 300);
+  if (statBersara) setTimeout(() => animateNumber(statBersara, counts.Bersara, 800), 400);
+  if (statMeninggal) setTimeout(() => animateNumber(statMeninggal, counts.Meninggal, 800), 500);
 
   // Build Department Chart with filter (default to Aktif)
   const filterElement = document.getElementById("departmentChartFilter");
@@ -800,6 +833,7 @@ const dataTablesMalay = {
 let departmentDataTable = null;
 let memberNoDataTable = null;
 let statusDataTable = null;
+let pendingPaymentsDataTable = null;
 
 function loadDepartmentTable(filterDept = "") {
   const tbody = document.getElementById("departmentTableBody");
@@ -931,6 +965,212 @@ function loadStatusTable(status = "Aktif") {
 document.getElementById("statusFilter").addEventListener("change", function () {
   loadStatusTable(this.value);
 });
+
+// Pending Payments Table (DataTables)
+function loadPendingPaymentsTable() {
+  const tbody = document.getElementById("pendingPaymentsTableBody");
+
+  if (pendingPaymentsDataTable) {
+    pendingPaymentsDataTable.destroy();
+    pendingPaymentsDataTable = null;
+  }
+
+  tbody.innerHTML = "";
+
+  // Collect all pending payments with member info
+  const pendingPayments = [];
+  membersData.forEach((member) => {
+    member.payments.forEach((payment) => {
+      if (payment.statusPembayaran === "Pending") {
+        pendingPayments.push({
+          memberNoAhli: member.noAhli,
+          memberNama: member.nama,
+          memberNoKP: member.noKP,
+          memberJabatan: member.jabatan,
+          paymentTahun: payment.tahun,
+          paymentNoResit: payment.noResit,
+          paymentNilai: payment.nilai,
+          paymentJenis: payment.jenisPembayaran,
+          paymentStatus: payment.statusPembayaran,
+          memberId: member.noKP, // Use noKP as unique identifier
+          paymentIndex: member.payments.indexOf(payment), // Index of payment in member's payments array
+        });
+      }
+    });
+  });
+
+  // Sort by year (newest first), then by member name
+  pendingPayments.sort((a, b) => {
+    if (b.paymentTahun !== a.paymentTahun) {
+      return b.paymentTahun - a.paymentTahun;
+    }
+    return a.memberNama.localeCompare(b.memberNama);
+  });
+
+  pendingPayments.forEach((item) => {
+    const row = `
+            <tr>
+                <td class="px-4 py-3 text-sm text-zinc-700">${formatDateForTable(item.paymentTahun)}</td>
+                <td class="px-4 py-3 text-sm text-zinc-700 font-medium">${item.memberNoAhli}</td>
+                <td class="px-4 py-3 text-sm text-zinc-700">${item.memberNama}</td>
+                <td class="px-4 py-3 text-sm text-zinc-700">${item.paymentNoResit}</td>
+                <td class="px-4 py-3 text-sm text-zinc-700">${item.paymentTahun}</td>
+                <td class="px-4 py-3 text-sm text-zinc-700 font-semibold">RM ${item.paymentNilai.toFixed(2)}</td>
+                <td class="px-4 py-3 text-sm text-zinc-700">${item.paymentJenis}</td>
+                <td class="px-4 py-3">
+                    <div class="flex items-center gap-2">
+                        <button type="button" 
+                            class="approve-payment-btn rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 text-sm inline-flex items-center gap-1 transition-colors" 
+                            data-member-id="${item.memberId}" 
+                            data-payment-index="${item.paymentIndex}"
+                            onclick="approvePayment('${item.memberId}', ${item.paymentIndex})">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Lulus
+                        </button>
+                        <button type="button" 
+                            class="decline-payment-btn rounded-lg bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1.5 text-sm inline-flex items-center gap-1 transition-colors" 
+                            data-member-id="${item.memberId}" 
+                            data-payment-index="${item.paymentIndex}"
+                            onclick="declinePayment('${item.memberId}', ${item.paymentIndex})">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            Tolak
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    tbody.innerHTML += row;
+  });
+
+  if (typeof $ !== "undefined" && $.fn.DataTable) {
+    pendingPaymentsDataTable = $("#pendingPaymentsTable").DataTable({
+      ...dataTablesMalay,
+      order: [[4, "desc"]], // Sort by year descending
+    });
+  }
+}
+
+// Helper function to format date for table display
+function formatDateForTable(year) {
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth() + 1;
+  const currentDay = today.getDate();
+  
+  // Use current date if year matches current year, otherwise use year-end date
+  if (year === currentYear) {
+    return `${currentDay.toString().padStart(2, '0')}/${currentMonth.toString().padStart(2, '0')}/${year}`;
+  } else {
+    return `31/12/${year}`;
+  }
+}
+
+// Approve payment function
+function approvePayment(memberId, paymentIndex) {
+  if (typeof Swal !== "undefined") {
+    Swal.fire({
+      title: "Luluskan Pembayaran?",
+      text: "Adakah anda pasti mahu meluluskan pembayaran ini?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Luluskan",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#22c55e",
+      cancelButtonColor: "#6b7280",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Find member and update payment status
+        const member = membersData.find((m) => m.noKP === memberId);
+        if (member && member.payments[paymentIndex]) {
+          member.payments[paymentIndex].statusPembayaran = "Success";
+          
+          // Reload table
+          loadPendingPaymentsTable();
+          
+          Swal.fire({
+            icon: "success",
+            title: "Berjaya",
+            text: "Pembayaran telah diluluskan.",
+            confirmButtonColor: "#22c55e",
+            timer: 2000,
+            timerProgressBar: true,
+          });
+        }
+      }
+    });
+  } else {
+    if (confirm("Adakah anda pasti mahu meluluskan pembayaran ini?")) {
+      const member = membersData.find((m) => m.noKP === memberId);
+      if (member && member.payments[paymentIndex]) {
+        member.payments[paymentIndex].statusPembayaran = "Success";
+        loadPendingPaymentsTable();
+        alert("Pembayaran telah diluluskan.");
+      }
+    }
+  }
+}
+
+// Decline payment function
+function declinePayment(memberId, paymentIndex) {
+  if (typeof Swal !== "undefined") {
+    Swal.fire({
+      title: "Tolak Pembayaran?",
+      text: "Adakah anda pasti mahu menolak pembayaran ini?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Tolak",
+      cancelButtonText: "Batal",
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      input: "textarea",
+      inputPlaceholder: "Sila masukkan sebab penolakan (pilihan)",
+      inputAttributes: {
+        "aria-label": "Sebab penolakan",
+      },
+      showCancelButton: true,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Find member and update payment status
+        const member = membersData.find((m) => m.noKP === memberId);
+        if (member && member.payments[paymentIndex]) {
+          member.payments[paymentIndex].statusPembayaran = "Reject";
+          if (result.value) {
+            member.payments[paymentIndex].rejectionReason = result.value;
+          }
+          
+          // Reload table
+          loadPendingPaymentsTable();
+          
+          Swal.fire({
+            icon: "success",
+            title: "Ditolak",
+            text: "Pembayaran telah ditolak.",
+            confirmButtonColor: "#ef4444",
+            timer: 2000,
+            timerProgressBar: true,
+          });
+        }
+      }
+    });
+  } else {
+    const reason = prompt("Sila masukkan sebab penolakan (pilihan):");
+    if (confirm("Adakah anda pasti mahu menolak pembayaran ini?")) {
+      const member = membersData.find((m) => m.noKP === memberId);
+      if (member && member.payments[paymentIndex]) {
+        member.payments[paymentIndex].statusPembayaran = "Reject";
+        if (reason) {
+          member.payments[paymentIndex].rejectionReason = reason;
+        }
+        loadPendingPaymentsTable();
+        alert("Pembayaran telah ditolak.");
+      }
+    }
+  }
+}
 
 // --- Profil form: state & toast ---
 let formInitialState = null;
