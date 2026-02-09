@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistem Keahlian</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#f0fdf6',
+                            100: '#dcfce9',
+                            200: '#bbf7d4',
+                            300: '#86efb0',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        },
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: { from: { opacity: '0' }, to: { opacity: '1' } },
+                        slideUp: { from: { opacity: '0', transform: 'translateY(12px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+                    },
+                },
+            },
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .input-focus-ring:focus {
+            box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.4);
+        }
+        .btn-primary-glow:hover {
+            box-shadow: 0 0 24px rgba(34, 197, 94, 0.35);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50 font-sans text-zinc-800 antialiased flex items-center justify-center p-4 overflow-x-hidden">
+    <!-- Background -->
+    <div class="fixed inset-0 -z-10">
+        <div class="absolute inset-0 bg-gradient-to-br from-primary-50 via-gray-50 to-primary-100/50"></div>
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-primary-200/40 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 right-1/4 w-80 h-80 bg-primary-300/30 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="w-full max-w-md animate-slide-up">
+        <!-- Card -->
+        <div class="rounded-2xl bg-white border border-gray-200 shadow-xl shadow-gray-200/50 p-8 sm:p-10">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-100 text-primary-600 mb-5">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-semibold tracking-tight text-zinc-800">Sistem Keahlian</h1>
+                <p class="mt-2 text-sm text-zinc-500">Sila log masuk untuk meneruskan</p>
+            </div>
+
+            <form id="loginForm" class="space-y-5">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-zinc-700 mb-2">Username</label>
+                    <input type="text" id="username" required
+                        class="input-focus-ring w-full rounded-xl bg-gray-50 border border-gray-200 px-4 py-3 text-zinc-800 placeholder-zinc-400 focus:border-primary-500 focus:bg-white focus:outline-none transition-colors"
+                        placeholder="Masukkan username">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-zinc-700 mb-2">Password</label>
+                    <input type="password" id="password" required
+                        class="input-focus-ring w-full rounded-xl bg-gray-50 border border-gray-200 px-4 py-3 text-zinc-800 placeholder-zinc-400 focus:border-primary-500 focus:bg-white focus:outline-none transition-colors"
+                        placeholder="Masukkan password">
+                </div>
+                <button type="submit"
+                    class="btn-primary-glow w-full rounded-xl bg-primary-500 px-4 py-3.5 font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white transition-all duration-200">
+                    Log Masuk
+                </button>
+                <div class="rounded-xl bg-gray-50 border border-gray-200 px-4 py-3">
+                    <p class="text-xs font-medium text-zinc-500 mb-1.5">Demo Credentials:</p>
+                    <p class="text-sm text-zinc-600">Username: <span class="text-zinc-800 font-medium">admin</span> · Password: <span class="text-zinc-800 font-medium">admin123</span></p>
+                </div>
+            </form>
+        </div>
+
+        <p class="mt-6 text-center text-xs text-zinc-500">Sistem Keahlian</p>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (username === 'admin' && password === 'admin123') {
+                localStorage.setItem('isLoggedIn', 'true');
+                window.location.href = 'dashboard.html';
+            } else {
+                alert('Username atau password salah!');
+            }
+        });
+    </script>
+</body>
+</html>
